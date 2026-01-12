@@ -67,6 +67,13 @@ class SolidPhyState:
         self.ax = la_center * cos_t - ha_center * sin_t
         self.ay = la_center * sin_t + ha_center * cos_t
     
+    def imu_output(self)->list[float]:
+        return [self.la,self.ha,self.imu_omiga]
+    
+    def imu_output_with_noise(self)->list[float]:
+        return [self.la+np.random.randn()*DRONE_LA_NOISE_VAR,
+                self.ha+np.random.randn()*DRONE_HA_NOISE_VAR,
+                self.imu_omiga+np.random.randn()*DRONE_IMU_OMIGA_NOISE_VAR]
     
     def set_pos(self,x:float,y:float,theta:float):
         """
@@ -104,7 +111,7 @@ class SolidPhyState:
         self.alpha=alpha
         self.world2imu()
     
-    def update(self, al: float, ah: float, imu_alpha: float, dt: float = 0.001):
+    def update(self, al: float, ah: float, imu_alpha: float, dt: float = SIMULATOR_DT):
         """
         RK4 (translation) + analytic rotation update
         al, ah       : IMU测得前向/左向加速度
@@ -173,6 +180,9 @@ class Ranger:
         self.y=0
         self.theta=0
         self.rays=[]
+        for _ in range(RANGER_SAMPLES):
+            tmp=Ray([0,0],0)
+            self.rays.append(tmp)
         self.fov=RANGER_FOV
         self.samples=RANGER_SAMPLES
         self.range=RANGER_VALID_DISTANCE
@@ -180,18 +190,16 @@ class Ranger:
         self.distance=[]
         self.map=map
     def update_rays(self):
-        self.rays = []
         angles = np.linspace(self.theta - self.fov/2, self.theta + self.fov/2, self.samples)
-        for angle in angles:
-            ray = Ray(origin=[self.x, self.y], angle=angle)
-            self.rays.append(ray)
+        for i,angle in enumerate(angles):
+            self.rays[i].set_pos(origin=[self.x, self.y], angle=angle)
     def set_pos(self,x:float=None,y:float=None,theta:float=None):
-        if x!=None:
+        if x is not None:
             self.x=x
-        if y!=None:
+        if y is not None:
             self.y=y
-        if theta!=None:
-            self.theta=self.theta
+        if theta is not None:
+            self.theta=theta
         self.ray_is_updated=False
     
     def scan(self):
@@ -223,7 +231,7 @@ class Ranger:
             if valid_points:
                 min_distance = min(valid_points)
             
-            distances.append(min_distance)
+            distances.append(float(min_distance))
         
         self.distance=distances
     
@@ -243,8 +251,6 @@ class Ranger:
         max_range = RANGER_VALID_DISTANCE[1]
         
         for i, ray in enumerate(self.rays):
-            end_x = self.x + max_range * np.cos(ray.angle)
-            end_y = self.y + max_range * np.sin(ray.angle)
             
             # 如果有scan结果，使用实际探测距离
             if hasattr(self, 'distance') and len(self.distance) > i:
@@ -253,32 +259,64 @@ class Ranger:
                     end_x = self.x + dist * np.cos(ray.angle)
                     end_y = self.y + dist * np.sin(ray.angle)
                     # 探测到物体用蓝色
-                    plt.plot([self.x, end_x], [self.y, end_y], 'b-', alpha=0.7, linewidth=2)
-                    plt.plot(end_x, end_y, 'bo', markersize=4, alpha=0.7)
+                    ray.paint(length=dist,linestyle='-',color="blue",alpha=0.7,linewidth=0.5)
                 else:
-                    # 未探测到用红色虚线
-                    plt.plot([self.x, end_x], [self.y, end_y], 'r--', alpha=0.5, linewidth=1)
+                    ray.paint(length=max_range,linestyle='--',color="red",alpha=0.7,linewidth=0.5)
             else:
-                # 没有scan结果时，用红色虚线表示最大范围
-                plt.plot([self.x, end_x], [self.y, end_y], 'r--', alpha=0.5, linewidth=1)
+                ray.paint(length=max_range,linestyle='--',color="blue",alpha=0.7,linewidth=0.5)
+    def draw(self):
+        """
+        绘制激光雷达的所有射线
+        """ 
+        if not self.rays or not self.ray_is_updated:
+            self.update_rays()
+            self.ray_is_updated = True
+        if len(self.distance)==0:
+            self.scan()
 
-
+        max_range = RANGER_VALID_DISTANCE[1]
+        
+        for i, ray in enumerate(self.rays):
+            
+            # 如果有scan结果，使用实际探测距离
+            if hasattr(self, 'distance') and len(self.distance) > i:
+                dist = self.distance[i]
+                if dist != RANGER_INVALID_DISTANCE_MARK:
+                    # 探测到物体用蓝色
+                    ray.draw(length=dist,linestyle='-',color="blue",alpha=0.7,linewidth=0.5,active=True)
+                else:
+                    ray.draw(length=max_range,linestyle='--',color="red",alpha=0.7,linewidth=0.5,active=True)
+            else:
+                ray.draw(length=max_range,linestyle='--',color="blue",alpha=0.7,linewidth=0.5,active=True)
+        pass
 class Drone:
-    def __init__(self,name:str,type:str,map:map):
-        self.name=name
-        self.type=type
+    def __init__(self,name:str,ranger:Ranger):
         self.state=SolidPhyState()
-        self.ranger=Ranger(map)
+        self.ranger=ranger
         self.shape=Circle(radius=DRONE_RADIUS)
         self.pilot=Pilot()
-        
         #bool
         self.paint_ranger=DRONE_PAINT_RANGER_RAYS
         self.is_syn=False
+        self.artist_no_arrow=len(MONITOR_MAP_GLOBAL_ALL_ARTISTS)
+        graph,=plt.plot([],[],color="black")
+        MONITOR_MAP_GLOBAL_ALL_ARTISTS.append(graph)
         
         
-    def update(self):
-        pass
+        
+    def update(self, time:float):
+        #感知
+        self.ranger.update_rays()
+        self.ranger.scan()
+        imu_data=self.state.imu_output_with_noise()
+        ranger_date=self.ranger.distance
+        #决策
+        order=self.pilot.get_order(imu=imu_data,ranger=ranger_date,time=time)
+        #执行
+        self.state.update(*order)
+        self.syn_pos()
+        
+        
     def set_pos(self,x:float,y:float,theta:float):
         self.state.set_pos(x=x,y=y,theta=theta)
         self.shape.set_pos(center=(x,y))
@@ -292,41 +330,54 @@ class Drone:
         self.shape.set_pos(center=(x,y))
         self.ranger.set_pos(x=x,y=y,theta=theta)
         self.is_syn=True
-    
     def paint(self):
-        if self.is_syn==False:
+        if not self.is_syn:
             self.syn_pos()
-        x=self.state.x
-        y=self.state.y
-        theta=self.state.theta
-        ax=plt.gca()
-        body = plt.Circle(
-            (x, y),
-            DRONE_RADIUS,
-            color='red',
-            fill=False,
-            linewidth=2
-        )
-        ax.add_patch(body)
+            
+        x = self.state.x
+        y = self.state.y
+        theta = self.state.theta
 
-        # ---------- 2. 绘制朝向指针 ----------
+        self.shape.paint(color="red",linewidth=0.5)
+
         arrow_len = DRONE_RADIUS * 1.5
-        dx = arrow_len * np.cos(theta)
-        dy = arrow_len * np.sin(theta)
+        head_x = x + arrow_len * np.cos(theta)
+        head_y = y + arrow_len * np.sin(theta)
+        
+        plt.plot([x, head_x], [y, head_y], color='black', linewidth=1.5)
 
-        ax.arrow(
-            x, y,
-            dx, dy,
-            head_width=DRONE_RADIUS * 0.3,
-            head_length=DRONE_RADIUS * 0.4,
-            fc='red',
-            ec='red',
-            linewidth=2,
-            length_includes_head=True
-        )
         if self.paint_ranger:
             self.ranger.paint()
+    def draw(self):
+        """
+        动态更新模式：调用各组件的 draw 方法更新 Line2D 数据
+        """
+        global MONITOR_MAP_GLOBAL_ALL_DYNAMIC_ARTISTS_INDEX
+        if not self.is_syn:
+            self.syn_pos()
+            
+        x = self.state.x
+        y = self.state.y
+        theta = self.state.theta
+
+        self.shape.set_pos(center=[x, y])
+        self.shape.draw(color="red",linewidth="0.5",active=True)
+        arrow_len = DRONE_RADIUS * 1.5
+        head_x = x + arrow_len * np.cos(theta)
+        head_y = y + arrow_len * np.sin(theta)
         
+
+        arrow_artist = MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no_arrow]
+        arrow_artist.set_data([x, head_x], [y, head_y])
+        MONITOR_MAP_GLOBAL_ALL_DYNAMIC_ARTISTS_INDEX.append(self.artist_no_arrow)
+
+
+        if self.paint_ranger:
+            self.ranger.draw()
+        return MONITOR_MAP_GLOBAL_ALL_DYNAMIC_ARTISTS_INDEX
+            
+            
+
         
         
 

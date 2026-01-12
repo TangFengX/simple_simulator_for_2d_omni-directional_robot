@@ -1,6 +1,8 @@
 
 import numpy as np
 import math 
+import matplotlib.pyplot as plt
+import os
 #Ranger
 RANGER_FOV=60/180*np.pi
 RANGER_SAMPLES=8
@@ -31,3 +33,41 @@ PRINT_RAY_LENGTH_DEFAULT=10
 #Drone
 DRONE_RADIUS=0.1
 DRONE_PAINT_RANGER_RAYS=True
+DRONE_X_INITIAL,DRONE_Y_INITIAL=(0,0)
+DRONE_THETA_INITIAL=0
+DRONE_LA_NOISE_VAR=0.01
+DRONE_HA_NOISE_VAR=0.01
+DRONE_IMU_OMIGA_NOISE_VAR=0.01
+#Simulator
+SIMULATOR_DT=0.01
+SIMULATOR_LOG_PATH=os.path.dirname(os.path.abspath(__file__))+"/../log/"
+SIMULATOR_LOG_OUTPUT_TERMINAL=True
+SIMULATOR_MAX_TIME=-1 
+
+#Monitor
+MONITOR_MAP_FIGURE,MONITOR_MAP_AX=plt.subplots()
+MONITOR_MAP_GLOBAL_ALL_ARTISTS=[]
+RATIO_OF_PHYSCAL_FRAME_TO_MONITER_FRAME=30
+import traceback
+
+class TraceableList(list):
+    def append(self, item):
+        super().append(item)
+
+    def clear(self):
+        # 打印是谁调用了清理
+        print("\n" + "="*30)
+        print("DETECTED CLEAR() OPERATION!")
+        traceback.print_stack() # 打印函数调用栈
+        print("="*30 + "\n")
+        super().clear()
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        
+# 替换原有的定义
+# MONITOR_MAP_GLOBAL_ALL_DYNAMIC_ARTISTS_INDEX = [] 
+MONITOR_MAP_GLOBAL_ALL_DYNAMIC_ARTISTS_INDEX = TraceableList()
+
+#DATA_TEXT_FIGURE,DATA_TEXT_AX=plt.subplot()
+#STATSTIC_FIGURE,STATISTIC_AX=plt.subplot()

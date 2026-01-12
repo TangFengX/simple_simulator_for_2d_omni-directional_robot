@@ -4,13 +4,16 @@ import math
 import matplotlib.pyplot as plt
 from param import *
 class Circle:
-    def __init__(self,center:list[float,float]=[0,0],radius:float=1):
+    def __init__(self,center:list[float,float]=[0,0],radius:float=1,**kwargs):
       self.center=center
       self.radius=radius
+      self.artist_no=len(MONITOR_MAP_GLOBAL_ALL_ARTISTS)
+      graph,=plt.plot([],[],color="black")
+      MONITOR_MAP_GLOBAL_ALL_ARTISTS.append(graph)
     def set_pos(self,center:list[float,float]=None,radius:float=None):
-      if center!=None:
+      if center is not None:
         self.center=center 
-      if radius!=None:
+      if radius is not None:
         self.radius=radius
     def paint(self, **kwargs):
         """绘制圆"""
@@ -18,6 +21,22 @@ class Circle:
         x = self.center[0] + self.radius * np.cos(theta)
         y = self.center[1] + self.radius * np.sin(theta)
         plt.plot(x, y, **kwargs)
+    def draw(self,color=None,linewidth=None,linestyle=None,alpha=None,active=False):
+        global MONITOR_MAP_GLOBAL_ALL_DYNAMIC_ARTISTS_INDEX
+        theta = np.linspace(0, 2*np.pi, 100)
+        x = self.center[0] + self.radius * np.cos(theta)
+        y = self.center[1] + self.radius * np.sin(theta)
+        MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_data(x,y)
+        if color is not None:
+            MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_color(color)
+        if linewidth is not None:
+            MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_linewidth(linewidth)
+        if linestyle is not None:
+            MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_linestyle(linestyle)
+        if linestyle is not None:
+            MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_alpha(alpha)
+        if active:
+            MONITOR_MAP_GLOBAL_ALL_DYNAMIC_ARTISTS_INDEX.append(self.artist_no)
 
 
 
@@ -35,7 +54,10 @@ class Rectangle:
         self.y = y
         self.width = width
         self.height = height
-        self.theta = theta  
+        self.theta = theta
+        self.artist_no=len(MONITOR_MAP_GLOBAL_ALL_ARTISTS)
+        graph,=plt.plot([],[],color="black")
+        MONITOR_MAP_GLOBAL_ALL_ARTISTS.append(graph)
 
 
     def set_pos(self, x: float=None, y: float=None, width: float=None, height: float=None, theta: float=None):
@@ -79,6 +101,23 @@ class Rectangle:
         x, y = zip(*corners)
         plt.plot(x, y, **kwargs)
         
+    def draw(self,color=None,linewidth=None,linestyle=None,alpha=None,active=False):
+        global MONITOR_MAP_GLOBAL_ALL_DYNAMIC_ARTISTS_INDEX
+        corners = self.get_corners() + [self.get_corners()[0]]  # 封闭矩形
+        x, y = zip(*corners)
+        MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_data(x,y)
+        if color is not None:
+            MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_color(color)
+        if linewidth is not None:
+            MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_linewidth(linewidth)
+        if linestyle is not None:
+            MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_linestyle(linestyle)
+        if linestyle is not None:
+            MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_alpha(alpha)
+        if active:
+            MONITOR_MAP_GLOBAL_ALL_DYNAMIC_ARTISTS_INDEX.append(self.artist_no)
+    
+        
     
 
     
@@ -94,6 +133,9 @@ class Line:
         self.b=b
         self.inf_k=inf_k
         self.is_valid=True
+        self.artist_no=len(MONITOR_MAP_GLOBAL_ALL_ARTISTS)
+        graph,=plt.plot([],[],color="black")
+        MONITOR_MAP_GLOBAL_ALL_ARTISTS.append(graph)
         
     def set_pos(self,a:float=None,b:float=None,inf_k:bool=None):
         if a is not None:
@@ -146,6 +188,32 @@ class Line:
             x = np.array(xlim)
             y = self.a * x + self.b
         plt.plot(x, y, **kwargs)
+    def draw(self, xlim=None, ylim=None,color=None,linewidth=None,linestyle=None,alpha=None,active=False):
+        global MONITOR_MAP_GLOBAL_ALL_DYNAMIC_ARTISTS_INDEX
+        if not self.is_valid:
+            return
+        if xlim is None:
+            xlim = plt.gca().get_xlim()
+        if ylim is None:
+            ylim = plt.gca().get_ylim()
+
+        if self.inf_k:
+            x = [self.a, self.a]
+            y = ylim
+        else:
+            x = np.array(xlim)
+            y = self.a * x + self.b
+        MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_data(x,y)
+        if color is not None:
+            MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_color(color)
+        if linewidth is not None:
+            MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_linewidth(linewidth)
+        if linestyle is not None:
+            MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_linestyle(linestyle)
+        if linestyle is not None:
+            MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_alpha(alpha)
+        if active:
+            MONITOR_MAP_GLOBAL_ALL_DYNAMIC_ARTISTS_INDEX.append(self.artist_no)
 
 class Ray:
     def __init__(self, origin: list[float,float], angle: float):
@@ -156,6 +224,9 @@ class Ray:
         self.origin = origin
         self.angle = angle
         self.dir = [math.cos(angle), math.sin(angle)]  # 单位方向向量
+        self.artist_no=len(MONITOR_MAP_GLOBAL_ALL_ARTISTS)
+        graph,=plt.plot([],[],color="black")
+        MONITOR_MAP_GLOBAL_ALL_ARTISTS.append(graph)
 
     def point_at(self, t: float) -> list[float,float]:
         """射线上 t 位置的点"""
@@ -163,12 +234,32 @@ class Ray:
         dx, dy = self.dir
         return [x0 + t * dx, y0 + t * dy]
     
+    def set_pos(self,origin: list[float,float], angle: float):
+        self.origin = origin
+        self.angle = angle
+        self.dir = [math.cos(angle), math.sin(angle)]
+    
     def paint(self, length=PRINT_RAY_LENGTH_DEFAULT, **kwargs):
         """绘制射线，默认长度10"""
         end = self.point_at(length)
         plt.plot([self.origin[0], end[0]], [self.origin[1], end[1]], **kwargs)
         
-
+    def draw(self, length=PRINT_RAY_LENGTH_DEFAULT,color=None,linewidth=None,linestyle=None,alpha=None,active=False):
+        global MONITOR_MAP_GLOBAL_ALL_DYNAMIC_ARTISTS_INDEX
+        end = self.point_at(length)
+        x=[self.origin[0], end[0]]
+        y=[self.origin[1], end[1]]
+        MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_data(x,y)
+        if color is not None:
+            MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_color(color)
+        if linewidth is not None:
+            MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_linewidth(linewidth)
+        if linestyle is not None:
+            MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_linestyle(linestyle)
+        if linestyle is not None:
+            MONITOR_MAP_GLOBAL_ALL_ARTISTS[self.artist_no].set_alpha(alpha)
+        if active:
+            MONITOR_MAP_GLOBAL_ALL_DYNAMIC_ARTISTS_INDEX.append(self.artist_no)
 # -------------------------------
 # Line × Line
 # -------------------------------
@@ -331,18 +422,31 @@ def rectangle_rectangle_intersection(r1, r2) -> List[list[float,float]]:
 # -------------------------------
 # Circle × Rectangle
 # -------------------------------
-def circle_rectangle_intersection(circle, rect) -> List[list[float,float]]:
+def circle_rectangle_intersection(circle, rect) -> list[list[float, float]]:
     points = []
     corners = rect.get_corners()
     for i in range(4):
         p1 = corners[i]
-        p2 = corners[(i+1)%4]
+        p2 = corners[(i + 1) % 4]
+        
+        # 1. 创建描述该边的直线
         temp_line = Line()
         temp_line.set_with_point(p1, p2)
-        pts = circle_line_intersection(circle, temp_line)
-        points.extend(pts)
+        
+        line_intersects = circle_line_intersection(circle, temp_line)
+        
+
+        for pt in line_intersects:
+            x, y = pt
+
+            if (min(p1[0], p2[0]) - 1e-9 <= x <= max(p1[0], p2[0]) + 1e-9 and
+                min(p1[1], p2[1]) - 1e-9 <= y <= max(p1[1], p2[1]) + 1e-9):
+                points.append(pt)
+                
+    # 去重
     if points:
-        points = np.unique(np.array(points), axis=0).tolist()
+
+        points = [list(x) for x in set(tuple(np.round(p, 9)) for p in points)]
     return points
 
 
@@ -462,6 +566,335 @@ def ray_rectangle_intersection(ray: Ray, rect) -> List[list[float,float]]:
     return points
 
 
+# ===============================
+# Collision Detection (快速碰撞检测，只判断是否相交，不计算具体交点)
+# ===============================
+def is_colliding(obj1: Union[Rectangle, Circle, Line, Ray],
+                 obj2: Union[Rectangle, Circle, Line, Ray]) -> bool:
+    """
+    判断两种几何对象是否发生碰撞（只判断是否有交点，不计算具体交点）
+    
+    Args:
+        obj1: 第一个几何对象
+        obj2: 第二个几何对象
+        
+    Returns:
+        bool: 是否发生碰撞
+    """
+    
+    # Ray 相关碰撞检测
+    if isinstance(obj1, Ray) and isinstance(obj2, Line):
+        return _ray_line_collide(obj1, obj2)
+    if isinstance(obj2, Ray) and isinstance(obj1, Line):
+        return _ray_line_collide(obj2, obj1)
+    if isinstance(obj1, Ray) and isinstance(obj2, Circle):
+        return _ray_circle_collide(obj1, obj2)
+    if isinstance(obj2, Ray) and isinstance(obj1, Circle):
+        return _ray_circle_collide(obj2, obj1)
+    if isinstance(obj1, Ray) and isinstance(obj2, Rectangle):
+        return _ray_rectangle_collide(obj1, obj2)
+    if isinstance(obj2, Ray) and isinstance(obj1, Rectangle):
+        return _ray_rectangle_collide(obj2, obj1)
+    if isinstance(obj1, Ray) and isinstance(obj2, Ray):
+        return _ray_ray_collide(obj1, obj2)
+    
+    # Line 相关碰撞检测
+    if isinstance(obj1, Line) and isinstance(obj2, Line):
+        return _line_line_collide(obj1, obj2)
+    elif isinstance(obj1, Line) and isinstance(obj2, Rectangle):
+        return _rectangle_line_collide(obj2, obj1)
+    elif isinstance(obj2, Line) and isinstance(obj1, Rectangle):
+        return _rectangle_line_collide(obj1, obj2)
+    elif isinstance(obj1, Line) and isinstance(obj2, Circle):
+        return _circle_line_collide(obj2, obj1)
+    elif isinstance(obj2, Line) and isinstance(obj1, Circle):
+        return _circle_line_collide(obj1, obj2)
+    
+    # Rectangle-Rectangle 碰撞检测
+    elif isinstance(obj1, Rectangle) and isinstance(obj2, Rectangle):
+        return _rectangle_rectangle_collide(obj1, obj2)
+    
+    # Circle-Rectangle 碰撞检测
+    elif isinstance(obj1, Circle) and isinstance(obj2, Rectangle):
+        return _circle_rectangle_collide(obj1, obj2)
+    elif isinstance(obj1, Rectangle) and isinstance(obj2, Circle):
+        return _circle_rectangle_collide(obj2, obj1)
+    
+    # Circle-Circle 碰撞检测
+    elif isinstance(obj1, Circle) and isinstance(obj2, Circle):
+        return _circle_circle_collide(obj1, obj2)
+    
+    print(f"Collision detection not implemented for this type combination: {type(obj1)} and {type(obj2)}")
+    return False
+
+def _ray_line_collide(ray: Ray, line) -> bool:
+    """射线与直线碰撞检测"""
+    x0, y0 = ray.origin
+    dx, dy = ray.dir
+    
+    if line.inf_k:
+        denom = dx
+        if np.isclose(denom, 0):
+            return False
+        t = (line.a - x0) / denom
+        return t >= 0
+    else:
+        denom = dy - line.a * dx
+        if np.isclose(denom, 0):
+            return False
+        t = (line.a * x0 + line.b - y0) / denom
+        return t >= 0
+
+def _ray_circle_collide(ray: Ray, circle) -> bool:
+    """射线与圆碰撞检测"""
+    x0, y0 = ray.origin
+    dx, dy = ray.dir
+    cx, cy = circle.center
+    r = circle.radius
+
+    D = (x0 - cx) * dx + (y0 - cy) * dy
+    E = (x0 - cx)**2 + (y0 - cy)**2 - r**2
+    delta = D**2 - E
+    
+    if delta < 0:
+        return False
+    
+    sqrt_delta = math.sqrt(delta)
+    t1 = -D + sqrt_delta
+    t2 = -D - sqrt_delta
+    
+    # 检查是否有正的t值
+    return t1 >= 0 or t2 >= 0
+
+def _ray_rectangle_collide(ray: Ray, rect) -> bool:
+    """射线与矩形碰撞检测"""
+    corners = rect.get_corners()
+    for i in range(4):
+        p1 = corners[i]
+        p2 = corners[(i+1)%4]
+        if _ray_segment_collide(ray, p1, p2):
+            return True
+    return False
+
+def _ray_ray_collide(ray1: Ray, ray2: Ray) -> bool:
+    """射线与射线碰撞检测"""
+    x1, y1 = ray1.origin
+    dx1, dy1 = ray1.dir
+    x2, y2 = ray2.origin
+    dx2, dy2 = ray2.dir
+
+    # 解方程组:
+    # x1 + t1 * dx1 = x2 + t2 * dx2
+    # y1 + t1 * dy1 = y2 + t2 * dy2
+    det = dx1 * (-dx2) - dy1 * (-dy2)
+    
+    if np.isclose(det, 0):
+        return False  # 平行或重合
+    
+    # 计算参数t1和t2
+    t1 = ((x2 - x1) * (-dx2) - (y2 - y1) * (-dy2)) / det
+    t2 = (dx1 * (y2 - y1) - dy1 * (x2 - x1)) / det
+    
+    # 检查是否都在射线上(t >= 0)
+    return t1 >= 0 and t2 >= 0
+
+def _ray_segment_collide(ray: Ray, p1: list, p2: list) -> bool:
+    """射线与线段碰撞检测"""
+    x0, y0 = ray.origin
+    dx, dy = ray.dir
+    x1, y1 = p1
+    x2, y2 = p2
+
+    seg_dx = x2 - x1
+    seg_dy = y2 - y1
+
+    det = dx * (-seg_dy) - dy * (-seg_dx)
+    
+    if np.isclose(det, 0):
+        return False
+    
+    t = ((x1 - x0) * (-seg_dy) - (y1 - y0) * (-seg_dx)) / det
+    s = (dx * (y1 - y0) - dy * (x1 - x0)) / det
+    
+    return t >= 0 and 0 <= s <= 1
+
+def _line_line_collide(l1, l2) -> bool:
+    """直线与直线碰撞检测"""
+    if getattr(l1, 'is_valid', True) is False or getattr(l2, 'is_valid', True) is False:
+        return False
+
+    # 两条垂直线
+    if l1.inf_k and l2.inf_k:
+        return l1.a == l2.a  # 重合也算碰撞
+    # l1垂直
+    if l1.inf_k:
+        return True
+    # l2垂直
+    if l2.inf_k:
+        return True
+    # 两条普通直线
+    return l1.a == l2.a  # 平行也算碰撞
+
+def _rectangle_line_collide(rect, line) -> bool:
+    """矩形与直线碰撞检测"""
+    corners = rect.get_corners()
+    for i in range(4):
+        p1 = corners[i]
+        p2 = corners[(i+1)%4]
+        if _segment_line_collide(p1, p2, line):
+            return True
+    return False
+
+def _segment_line_collide(p1: list, p2: list, line) -> bool:
+    """线段与直线碰撞检测"""
+    x1, y1 = p1
+    x2, y2 = p2
+    dx = x2 - x1
+    dy = y2 - y1
+
+    if dx == 0 and dy == 0:
+        return False
+
+    if line.inf_k:
+        x = line.a
+        if dx == 0:
+            return x == x1  # 重合
+        t = (x - x1) / dx
+        return 0 <= t <= 1
+    else:
+        a, b = line.a, line.b
+        if dx == 0:
+            x = x1
+            y = a * x + b
+            return min(y1, y2) <= y <= max(y1, y2)
+        if dy == 0:
+            y = y1
+            if a == 0:
+                return y == b  # 重合
+            x = (y - b) / a
+            return min(x1, x2) <= x <= max(x1, x2)
+        # 一般情况，求 t
+        denom = dy - a * dx
+        if np.isclose(denom, 0):
+            # 平行，检查是否重合
+            y_on_line = a * x1 + b
+            return np.isclose(y1, y_on_line)
+        t = (a * x1 + b - y1) / denom
+        return 0 <= t <= 1
+
+def _circle_line_collide(circle, line) -> bool:
+    """圆与直线碰撞检测"""
+    cx, cy = circle.center
+    r = circle.radius
+
+    if line.inf_k:
+        x = line.a
+        distance = abs(x - cx)
+        return distance <= r
+    else:
+        a, b = line.a, line.b
+        # 点到直线距离公式
+        distance = abs(a * cx - cy + b) / math.sqrt(a**2 + 1)
+        return distance <= r
+
+def _rectangle_rectangle_collide(r1, r2) -> bool:
+    """矩形与矩形碰撞检测"""
+    c1 = r1.get_corners()
+    c2 = r2.get_corners()
+    
+    # 检查r1的每条边和r2的每条边是否相交
+    for i in range(4):
+        p1, p2 = c1[i], c1[(i+1)%4]
+        for j in range(4):
+            q1, q2 = c2[j], c2[(j+1)%4]
+            if _segments_intersect(p1, p2, q1, q2):
+                return True
+    return False
+
+def _segments_intersect(p1: list, p2: list, q1: list, q2: list) -> bool:
+    """判断两条线段是否相交"""
+    x1, y1 = p1
+    x2, y2 = p2
+    x3, y3 = q1
+    x4, y4 = q2
+
+    def ccw(A, B, C):
+        return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
+
+    return ccw(p1, q1, q2) != ccw(p2, q1, q2) and ccw(p1, p2, q1) != ccw(p1, p2, q2)
+
+def _circle_rectangle_collide(circle, rect) -> bool:
+    """圆与矩形碰撞检测"""
+    corners = rect.get_corners()
+    
+    # 检查圆心是否在矩形内
+    if _point_in_rectangle(circle.center, rect):
+        return True
+    
+    # 检查圆是否与矩形的任何边相交
+    for i in range(4):
+        p1 = corners[i]
+        p2 = corners[(i+1)%4]
+        if _point_segment_distance(circle.center, p1, p2) <= circle.radius:
+            return True
+    return False
+
+def _point_in_rectangle(point: list, rect) -> bool:
+    """判断点是否在矩形内（考虑旋转）"""
+    px, py = point
+    corners = rect.get_corners()
+    
+    # 使用射线投射法
+    intersections = 0
+    test_ray = Ray(origin=[px, py], angle=0)
+    
+    for i in range(4):
+        p1 = corners[i]
+        p2 = corners[(i+1)%4]
+        if _ray_segment_collide(test_ray, p1, p2):
+            intersections += 1
+    
+    return intersections % 2 == 1
+
+def _point_segment_distance(point: list, seg_start: list, seg_end: list) -> float:
+    """计算点到线段的最短距离"""
+    px, py = point
+    x1, y1 = seg_start
+    x2, y2 = seg_end
+    
+    # 向量法计算点到线段距离
+    dx = x2 - x1
+    dy = y2 - y1
+    
+    if dx == 0 and dy == 0:
+        # 线段退化为点
+        return math.sqrt((px - x1)**2 + (py - y1)**2)
+    
+    # 投影参数
+    t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)
+    t = max(0, min(1, t))  # 限制在[0,1]范围内
+    
+    # 最近点坐标
+    nearest_x = x1 + t * dx
+    nearest_y = y1 + t * dy
+    
+    # 计算距离
+    return math.sqrt((px - nearest_x)**2 + (py - nearest_y)**2)
+
+def _circle_circle_collide(c1: Circle, c2: Circle) -> bool:
+    """圆与圆碰撞检测"""
+    x0, y0 = c1.center
+    r0 = c1.radius
+    x1, y1 = c2.center
+    r1 = c2.radius
+
+    dx = x1 - x0
+    dy = y1 - y0
+    distance = math.sqrt(dx*dx + dy*dy)
+    
+    # 两圆相交或包含关系都算碰撞
+    return distance <= (r0 + r1)
+
 from typing import List, Union
 
 # 新增 Ray 支持
@@ -481,6 +914,8 @@ def intersection(obj1: Union[Rectangle, Circle, Line, Ray],
         return ray_rectangle_intersection(obj1, obj2)
     if isinstance(obj2, Ray) and isinstance(obj1, Rectangle):
         return ray_rectangle_intersection(obj2, obj1)
+    if isinstance(obj1, Ray) and isinstance(obj2, Ray):
+        return ray_ray_intersection(obj1, obj2)
 
     # ---------------- Line / Circle / Rectangle ----------------
     if isinstance(obj1, Line) and isinstance(obj2, Line):
@@ -505,6 +940,37 @@ def intersection(obj1: Union[Rectangle, Circle, Line, Ray],
     print("Intersection not implemented for this type combination")
     return []
 
+def ray_ray_intersection(ray1: Ray, ray2: Ray) -> List[list[float,float]]:
+    """
+    计算两条射线的交点
+    Args:
+        ray1: 第一条射线
+        ray2: 第二条射线
+    Returns:
+        交点列表 [[x, y]]
+    """
+    x1, y1 = ray1.origin
+    dx1, dy1 = ray1.dir
+    x2, y2 = ray2.origin
+    dx2, dy2 = ray2.dir
+
+    # 解方程组:
+    # x1 + t1 * dx1 = x2 + t2 * dx2
+    # y1 + t1 * dy1 = y2 + t2 * dy2
+    det = dx1 * (-dx2) - dy1 * (-dy2)
+    
+    if np.isclose(det, 0):
+        return []  # 平行或重合
+    
+    # 计算参数t1和t2
+    t1 = ((x2 - x1) * (-dx2) - (y2 - y1) * (-dy2)) / det
+    t2 = (dx1 * (y2 - y1) - dy1 * (x2 - x1)) / det
+    
+    # 检查是否都在射线上(t >= 0)
+    if t1 >= 0 and t2 >= 0:
+        return [ray1.point_at(t1)]
+    return []
+
 class Map:
     def __init__(self):
         self.x_range=MAP_X_RANGE
@@ -516,7 +982,7 @@ class Map:
         self.entities=[]
         self.boundary=MAP_WITH_BOUNDARY
         self.target=Circle(center=MAP_TARGET_POSITION, radius=MAP_TARGET_RADIUS)
-    def gen_map(self,config:list=MAP_ENTITIES_CONFIG):
+        config:list=MAP_ENTITIES_CONFIG
         if self.boundary:
             x_min, x_max = self.x_range
             y_min, y_max = self.y_range
@@ -563,7 +1029,8 @@ class Map:
             except AttributeError:
                 print(f"Warning: entity {e} has no paint method")
         self.target.paint(color="green")
-
-
-
-
+    
+    def draw(self):
+        for e in self.entities:
+            e.draw(color="black",linewidth=1)
+        self.target.draw(color="green")
