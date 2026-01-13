@@ -1,5 +1,6 @@
 #include "map.h"
 #include <math.h>
+RayDirection ray_direction;
 void map_init()
 {
     // init map
@@ -13,6 +14,7 @@ void map_init()
     map.head = 0;
     map.tail = 0;
     map.len = 0;
+    map.time=0;
     // init ray direction cos/sin
     for (i = 0; i < RANGER_SAMPLE; i++)
     {
@@ -26,6 +28,7 @@ void map_init()
         ranger_data.valid[i] = 0;
     }
     ranger_data.len = RANGER_SAMPLE;
+    ranger_data.time=0;
     // init target list
     for (i = 0; i < MAP_TARGETS; i++)
     {
@@ -113,3 +116,4 @@ void map_update()
     map_add_point_scanned();
     map_check_reach_target();
 }
+

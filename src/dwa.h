@@ -12,7 +12,7 @@ typedef struct
     float w_obstacle;
     float w_velocity;
 }DWAParam;
-DWAParam dwa_param;
+extern DWAParam dwa_param;
 typedef struct {
     float x, y, theta;
     float v, omiga;
@@ -25,4 +25,5 @@ float score_goal(SimState*s);
 float score_velocity(SimState*s,float v);
 float score_obstacle(SimState*s);
 void dwa_plan();
+void dwa_init();
 #endif // !__DWA_H__

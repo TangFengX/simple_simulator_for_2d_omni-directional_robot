@@ -19,7 +19,7 @@ typedef struct{
     float cos_theta[RANGER_SAMPLE];
     float sin_theta[RANGER_SAMPLE];
 }RayDirection;
-RayDirection ray_direction;
+extern RayDirection ray_direction;
 
 
 

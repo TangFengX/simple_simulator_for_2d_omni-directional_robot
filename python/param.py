@@ -101,6 +101,7 @@ C_PARAM_LIST = [
     ["MAP_TARGETS_X", str(C_MAP_TARGETS_X).replace('[','{').replace(']','}'), ""],
     ["MAP_TARGETS_Y", str(C_MAP_TARGETS_Y).replace('[','{').replace(']','}'), ""],
     ["MAP_TARGET_RADIUS", "0.2", ""], # 示例中未给出 C_ 变量，可自行定义
+    ["MAP_UPDATE_WORK_CYCLE","0.1","地图更新最小周期"],
     ["POS_VECTOR_LEN", str(C_POS_VECTOR_LEN), "[x y theta vx vy b_a前向0偏 b_g陀螺0偏]"],
     ["P0_DEFAULT", str(C_P0_DEFAULT).replace('[','{').replace(']','}'), "x y theta ax ay b_ax b_omiga"],
     ["Q0_DEFAULT", str(C_Q0_DEFAULT).replace('[','{').replace(']','}'), ""],
@@ -110,7 +111,7 @@ C_PARAM_LIST = [
     ["RANGER_RAY_ANGLE_SIN", f"{C_RANGER_RAY_ANGLE_SIN:.11f}", "sin(fov/(sample-1))"],
     ["RANGER_MIN_DIST", str(C_RANGER_MIN_DIST), ""],
     ["RANGER_MAX_DIST", str(C_RANGER_MAX_DIST), ""],
-    ["ISA_WORK_CYCLE", str(C_ISA_WORK_CYCLE), "100hz"],
+    ["INS_WORK_CYCLE", str(C_ISA_WORK_CYCLE), "100hz"],
     ["DWA_WORK_CYCLE", str(C_DWA_WORK_CYCLE), "10hz"],
     ["MAX_V",                 str(C_MAX_V),                 "最大速度 m/s"],
     ["MAX_OMIGA",             f"{C_MAX_OMIGA:.11f}",        "最大角速度 rad/s"],
@@ -124,6 +125,7 @@ C_PARAM_LIST = [
     ["DWA_MIN_DISTANCE_TO_OBSTACLE",str(C_DWA_MIN_DISTANCE_TO_OBSTACLE),"距离障碍物最小距离"],
     ["DWA_VELOCITY_SEARCH_STEP",str(C_DWA_VELOCITY_SEARCH_STEP),"速度搜索步长"],
     ["DWA_ANGULAR_VELOCITY_SEARCH_STEP",str(C_DWA_ANGULAR_VELOCITY_STEP),"角速度搜索步长"]
+    
 ]
 
 HEAD_FILE_PATH=os.path.dirname(os.path.abspath(__file__))+"/../src/param.h"

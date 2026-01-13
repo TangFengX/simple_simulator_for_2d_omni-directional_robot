@@ -1,5 +1,4 @@
 #ifndef __PILOT_H__
-
 #define __PILOT_H__
 
 #include <stdint.h>
@@ -10,11 +9,13 @@
 // 来自tof的信息
 typedef struct
 {
+    float time;
     uint16_t dist[RANGER_SAMPLE];
     bool valid[RANGER_SAMPLE];
     uint8_t len;
+    bool updated;
 } RangerData;
-RangerData ranger_data;
+extern RangerData ranger_data;
 
 // 来自imu的信息，包括前向，侧向加速度与角速度
 typedef struct
@@ -23,17 +24,19 @@ typedef struct
     float al;
     float ah;
     float omiga;
+    bool updated;
 } ImuData;
-ImuData imu_data;
+extern ImuData imu_data;
 
 // 传递命令给飞控
 typedef struct
 {
+    float time;
     float al;
     float ah;
     float alpha;
 } Order;
-Order order;
+extern Order order;
 
 // 在二维下对自己的位姿估计
 typedef struct
@@ -48,7 +51,7 @@ typedef struct
     float ax;
     float ay;
 } Imu;
-Imu imu;
+extern Imu imu;
 
 // 点，用于后期的几何计算
 typedef struct
@@ -66,8 +69,9 @@ typedef struct
     uint8_t head;
     uint8_t tail;
     uint8_t len;
+    float time;
 } Map;
-Map map;
+extern Map map;
 
 //存储一系列的航迹点，当判断机体到达一个航迹点时，就p++切换到下一个，循环滚动
 typedef struct{
@@ -75,15 +79,13 @@ typedef struct{
     float y[MAP_TARGETS];
     uint8_t p;
 }Target;
-Target target;
+extern Target target;
 
-// DWA规划器
-void dwa_planner();
 
 //调用各模块初始化函数，初始化各模块
-void init_pilot();
+void pilot_init();
 
 //更新，做出决策
-void update_pilot();
+void pilot_update(float t);
 
 #endif

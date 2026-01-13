@@ -1,5 +1,13 @@
 #include "ins.h"
 #include "pilot.h"
+
+#define N POS_VECTOR_LEN
+static float X[N];              // 状态
+static float P_data[N*N];
+static float F_data[N*N];
+static float Q_data[N*N];
+static Mat P, F, Q;
+
 void kf_init()
 {
     static uint8_t inited = 0;
@@ -21,7 +29,17 @@ void kf_init()
             Q_data[i * N + j] = (i == j) ? Q0[i] : 0;
         }
     }
+    imu_data_init();
 }
+
+void imu_data_init(){
+    imu_data.time=0;
+    imu_data.ah=0;
+    imu_data.al=0;
+    imu_data.omiga=0;
+    imu_data.updated=false;
+}
+
 
 void kf_ins()
 {

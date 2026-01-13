@@ -4,6 +4,8 @@
 #include <math.h>
 #include "math_utils.h"
 
+DWAParam dwa_param;
+
 // 预计算常量，避免重复计算
 static float MAX_ACCEL_TIME_DT; // max_a * dt
 static float MAX_ALPHA_TIME_DT; // max_alpha * dt
@@ -21,16 +23,25 @@ void dwa_param_init()
     dwa_param.w_obstacle = DWA_WEIGHT_OBSTACLE;
     dwa_param.w_velocity = DWA_WEIGHT_VELOCITY;
 
+    
+}
+void dwa_init(){
+    dwa_param_init();
     // 预计算优化
     MAX_ACCEL_TIME_DT = dwa_param.max_a * dwa_param.dt;
     MAX_ALPHA_TIME_DT = dwa_param.max_alpha * dwa_param.dt;
     float safe_dist = DWA_MIN_DISTANCE_TO_OBSTACLE;
     MIN_DIST_SQ = safe_dist * safe_dist;
+
+    //初始化order
+    order.ah=0;
+    order.al=0;
+    order.alpha=0;
+    order.time=0;
 }
 
 // 辅助函数声明
 static void simulate_trajectory(SimState *s, float v, float w, float total_time, float dt);
-static float fast_score_obstacle(const SimState *s); // 优化后的障碍物评分
 
 void dwa_plan()
 {
@@ -170,6 +181,7 @@ float score_obstacle(SimState *s)
 
 float score_velocity(SimState *s, float v)
 {
+    (void)s; // 参数未使用，显式忽略
     // 保持原样，逻辑简单且正确
     // 倾向于向前走(v>0)，惩罚倒车
     return fabsf(v) / dwa_param.max_v * (v >= 0 ? 1.0f : 0.5f);
