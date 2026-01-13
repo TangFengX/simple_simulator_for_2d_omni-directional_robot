@@ -1,0 +1,122 @@
+#include "dwa.h"
+#include "param.h"
+#include "pilot.h"
+#include <math.h>
+#include "math_utils.h"
+void dwa_param_init(){
+    dwa_param.max_v=MAX_V;
+    dwa_param.max_omiga=MAX_OMIGA;
+    dwa_param.max_a=MAX_A;
+    dwa_param.max_alpha=MAX_ALPHA;
+    dwa_param.dt=DWA_DT;
+    dwa_param.predict_time=DWA_PREDICT_TIME;
+    dwa_param.w_goal=DWA_WEIGHT_GOAL;
+    dwa_param.w_obstacle=DWA_WEIGHT_OBSTACLE;
+    dwa_param.w_velocity=DWA_WEIGHT_VELOCITY;
+}
+
+void dwa_plan()
+{
+    float best_score = -1e9;
+    float best_v = 0;
+    float best_w = 0;
+    float v_now = imu.vx * cosf(imu.theta) + imu.vy * sinf(imu.theta);
+    float omiga = imu.omiga;
+    float v_min = v_now - dwa_param.max_a * dwa_param.dt;
+    float v_max = v_now + dwa_param.max_a * dwa_param.dt;
+
+    float w_min = omiga - dwa_param.max_alpha * dwa_param.dt;
+    float w_max = omiga + dwa_param.max_alpha * dwa_param.dt;
+    v_min = fmaxf(-dwa_param.max_v, v_min);
+    v_max = fminf(dwa_param.max_v, v_max);
+
+    w_min = fmaxf(-dwa_param.max_omiga, w_min);
+    w_max = fminf(dwa_param.max_omiga, w_max);
+    SimState s;
+    for (float v = v_min; v <= v_max; v += DWA_VELOCITY_SEARCH_STEP)
+    {
+        for (float w = w_min; w <= w_max; w += DWA_ANGULAR_VELOCITY_SEARCH_STEP)
+        {
+            s.x=imu.x;
+            s.y=imu.y;
+            s.theta=imu.theta;
+            s.v=v;
+            s.omiga=w;
+            for (float t = 0; t < dwa_param.predict_time; t += dwa_param.dt)
+                simulate_step(&s,v, w, dwa_param.dt);
+
+            float score =
+                dwa_param.w_goal * score_goal(&s) +
+                dwa_param.w_obstacle * score_obstacle(&s) +
+                dwa_param.w_velocity * score_velocity(&s,v);
+
+            if (score > best_score)
+            {
+                best_score = score;
+                best_v = v;
+                best_w = w;
+            }
+        }
+    }
+
+    // 转成加速度命令
+    float a = (best_v - v_now) / dwa_param.dt;
+    if (a > dwa_param.max_a) a = dwa_param.max_a;
+    if (a < -dwa_param.max_a) a = -dwa_param.max_a;
+    order.al = a;
+    order.ah = 0.0f;
+    float alpha =(best_w - omiga)/dwa_param.dt;
+    if(alpha>dwa_param.max_alpha) alpha=dwa_param.max_alpha;
+    if(alpha<-dwa_param.max_alpha) alpha=-dwa_param.max_alpha;
+    order.alpha = alpha;
+}
+
+void simulate_step(SimState*s,float v, float omiga, float dt){
+    s->x += v * cosf(s->theta) * dt;
+    s->y += v * sinf(s->theta) * dt;
+    s->theta += omiga * dt;
+}
+
+float score_obstacle(SimState *s)
+{
+    float min_dist2 = 1e9f;
+
+    for (int i = 0; i < map.len; i++)
+    {
+        float dx = map.points[i].x - s->x;
+        float dy = map.points[i].y - s->y;
+        float d2 = dx*dx + dy*dy;
+        if (d2 < min_dist2)
+            min_dist2 = d2;
+    }
+
+    float d_safe = DWA_MIN_DISTANCE_TO_OBSTACLE;
+    if (min_dist2 < d_safe * d_safe)
+        return -1e6f;
+
+    float d = sqrtf(min_dist2);
+
+    float score = 1.0f - 1.0f / (d + 1.0f);
+    return score;
+}
+
+float score_velocity(SimState*s,float v)
+{
+    return fabsf(v)/dwa_param.max_v*(v>=0?1.0f:0.5f);
+}
+
+float score_goal(SimState *s)
+{
+    float dx = target.x[target.p] - s->x;
+    float dy = target.y[target.p] - s->y;
+
+    float goal_theta = atan2(dy, dx);
+
+    float dtheta = goal_theta - s->theta;
+
+    // 归一化到 [-pi, pi]
+    while (dtheta > 3.14159265358979323846f)  dtheta -= 2.0f * 3.14159265358979323846f;
+    while (dtheta < -3.14159265358979323846f) dtheta += 2.0f * 3.14159265358979323846f;
+
+    return -fabsf(dtheta)/3.14159265358979323846f;
+}

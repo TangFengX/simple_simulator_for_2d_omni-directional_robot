@@ -6,7 +6,7 @@ import os
 #Ranger
 RANGER_FOV=60/180*np.pi
 RANGER_SAMPLES=8
-RANGER_VALID_DISTANCE=[0,4]
+RANGER_VALID_DISTANCE=[0.1,4]
 RANGER_INVALID_DISTANCE_MARK=-1
 
 
@@ -48,26 +48,82 @@ SIMULATOR_MAX_TIME=-1
 MONITOR_MAP_FIGURE,MONITOR_MAP_AX=plt.subplots()
 MONITOR_MAP_GLOBAL_ALL_ARTISTS=[]
 RATIO_OF_PHYSCAL_FRAME_TO_MONITER_FRAME=30
-import traceback
 
-class TraceableList(list):
-    def append(self, item):
-        super().append(item)
-
-    def clear(self):
-        # 打印是谁调用了清理
-        print("\n" + "="*30)
-        print("DETECTED CLEAR() OPERATION!")
-        traceback.print_stack() # 打印函数调用栈
-        print("="*30 + "\n")
-        super().clear()
-
-    def __setitem__(self, key, value):
-        super().__setitem__(key, value)
         
 # 替换原有的定义
-# MONITOR_MAP_GLOBAL_ALL_DYNAMIC_ARTISTS_INDEX = [] 
-MONITOR_MAP_GLOBAL_ALL_DYNAMIC_ARTISTS_INDEX = TraceableList()
+MONITOR_MAP_GLOBAL_ALL_DYNAMIC_ARTISTS_INDEX = [] 
+
 
 #DATA_TEXT_FIGURE,DATA_TEXT_AX=plt.subplot()
 #STATSTIC_FIGURE,STATISTIC_AX=plt.subplot()
+
+
+#####################C param only##########################
+C_MAP_POINTS=64
+C_MAP_VALID_POINT_MIN_DIS=0.2
+C_MAP_TARGETS=2
+C_MAP_TARGETS_X=[8,0]#由于simulator尚不支持多目标，所以暂时不同步参数
+C_MAP_TARGETS_Y=[8,0]
+
+C_POS_VECTOR_LEN = 7
+C_P0_DEFAULT = [1.0, 1.0, 0.2, 0.5, 0.5, 0.05, 0.01]
+C_Q0_DEFAULT = [1e-6, 1e-6, 1e-7, 1e-3, 1e-3, 1e-6, 1e-8]
+
+C_RANGER_FOV = RANGER_FOV
+C_RANGER_SAMPLE = RANGER_SAMPLES
+C_RANGER_MIN_DIST = RANGER_VALID_DISTANCE[0]
+C_RANGER_MAX_DIST = RANGER_VALID_DISTANCE[1]
+
+angle_step = (C_RANGER_FOV) / (C_RANGER_SAMPLE - 1)
+C_RANGER_RAY_ANGLE_COS = math.cos(angle_step)
+C_RANGER_RAY_ANGLE_SIN = math.sin(angle_step)
+
+C_ISA_WORK_CYCLE = 0.01  # 100hz
+C_DWA_WORK_CYCLE = 0.1   # 10hz
+
+C_MAX_V=2
+C_MAX_OMIGA=180/180*np.pi
+C_MAX_A=1
+C_MAX_ALPHA=2
+
+C_DWA_DT=0.1
+C_DWA_PREDICT_TIME=1.5
+C_DWA_WEIGHT_GOAL=1
+C_DWA_WEIGHT_OBSTACLE=1.5
+C_DWA_WEIGHT_VELOCITY=0.3
+C_DWA_MIN_DISTANCE_TO_OBSTACLE=DRONE_RADIUS
+C_DWA_VELOCITY_SEARCH_STEP=0.1
+C_DWA_ANGULAR_VELOCITY_STEP=0.1
+C_PARAM_LIST = [
+    ["MAP_POINTS", str(C_MAP_POINTS), ""],
+    ["MAP_VALID_POINT_MIN_DIST", str(C_MAP_VALID_POINT_MIN_DIS), ""],
+    ["MAP_TARGETS", str(C_MAP_TARGETS), ""],
+    ["MAP_TARGETS_X", str(C_MAP_TARGETS_X).replace('[','{').replace(']','}'), ""],
+    ["MAP_TARGETS_Y", str(C_MAP_TARGETS_Y).replace('[','{').replace(']','}'), ""],
+    ["MAP_TARGET_RADIUS", "0.2", ""], # 示例中未给出 C_ 变量，可自行定义
+    ["POS_VECTOR_LEN", str(C_POS_VECTOR_LEN), "[x y theta vx vy b_a前向0偏 b_g陀螺0偏]"],
+    ["P0_DEFAULT", str(C_P0_DEFAULT).replace('[','{').replace(']','}'), "x y theta ax ay b_ax b_omiga"],
+    ["Q0_DEFAULT", str(C_Q0_DEFAULT).replace('[','{').replace(']','}'), ""],
+    ["RANGER_FOV", f"{C_RANGER_FOV }", ""],
+    ["RANGER_SAMPLE", str(C_RANGER_SAMPLE), ""],
+    ["RANGER_RAY_ANGLE_COS", f"{C_RANGER_RAY_ANGLE_COS:.11f}", "cos(fov/(sample-1))"],
+    ["RANGER_RAY_ANGLE_SIN", f"{C_RANGER_RAY_ANGLE_SIN:.11f}", "sin(fov/(sample-1))"],
+    ["RANGER_MIN_DIST", str(C_RANGER_MIN_DIST), ""],
+    ["RANGER_MAX_DIST", str(C_RANGER_MAX_DIST), ""],
+    ["ISA_WORK_CYCLE", str(C_ISA_WORK_CYCLE), "100hz"],
+    ["DWA_WORK_CYCLE", str(C_DWA_WORK_CYCLE), "10hz"],
+    ["MAX_V",                 str(C_MAX_V),                 "最大速度 m/s"],
+    ["MAX_OMIGA",             f"{C_MAX_OMIGA:.11f}",        "最大角速度 rad/s"],
+    ["MAX_A",                 str(C_MAX_A),                 "最大加速度 m/s^2"],
+    ["MAX_ALPHA",             str(C_MAX_ALPHA),             "最大角加速度 rad/s^2"],
+    ["DWA_DT",                str(C_DWA_DT),                "DWA预测步长"],
+    ["DWA_PREDICT_TIME",      str(C_DWA_PREDICT_TIME),      "DWA预测时长"],
+    ["DWA_WEIGHT_GOAL",       str(C_DWA_WEIGHT_GOAL),       "目标点权重"],
+    ["DWA_WEIGHT_OBSTACLE",   str(C_DWA_WEIGHT_OBSTACLE),   "障碍物权重"],
+    ["DWA_WEIGHT_VELOCITY",   str(C_DWA_WEIGHT_VELOCITY),   "速度权重"],
+    ["DWA_MIN_DISTANCE_TO_OBSTACLE",str(C_DWA_MIN_DISTANCE_TO_OBSTACLE),"距离障碍物最小距离"],
+    ["DWA_VELOCITY_SEARCH_STEP",str(C_DWA_VELOCITY_SEARCH_STEP),"速度搜索步长"],
+    ["DWA_ANGULAR_VELOCITY_SEARCH_STEP",str(C_DWA_ANGULAR_VELOCITY_STEP),"角速度搜索步长"]
+]
+
+HEAD_FILE_PATH=os.path.dirname(os.path.abspath(__file__))+"/../src/param.h"
